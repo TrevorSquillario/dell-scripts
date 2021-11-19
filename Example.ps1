@@ -1,13 +1,3 @@
-# Dell OpenManage and iDRAC Scripts
-
-# Examples
-Execute script on a single iDRAC
-```
-Get-PCIInventory.ps1 -idrac_ip "192.168.1.100" -idrac_username "root" -idrac_password "calvin" 
-```
-
-Loop through text file and execute script for each iDRAC
-```
 $InventoryAll = @()
 foreach ($iDRAC in Get-Content "C:\Temp\hosts.txt") {
     $Inventory = & "./PowerShell/Get-PCIInventory.ps1" -idrac_ip $iDRAC -idrac_username "root" -idrac_password "calvin" 
@@ -29,10 +19,3 @@ foreach ($iDRAC in Get-Content "C:\Temp\hosts.txt") {
 
 # Export to CSV
 $InventoryAll | Export-Csv "C:\Temp\PCIInventory.csv" -NoTypeInformation
-```
-
-## Support
-This code is provided as-is and currently not officially supported by Dell EMC.
-
-## License
-Copyright Dell EMC
