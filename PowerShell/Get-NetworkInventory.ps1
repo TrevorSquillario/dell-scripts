@@ -67,13 +67,54 @@ $pass= $idrac_password
 $secpasswd = ConvertTo-SecureString $pass -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential($user, $secpasswd)
 
+class NetworkDetails {
+    $Host
+    $CardId
+    $CardManufacturer
+    $CardModel
+    $CardPartNumber
+    $CardSerialNumber
+    $PortId
+    $PortLinkStatus
+    $PortMacAddresses
+    $TransceiverDeviceDescription
+    $TransceiverFQDD
+    $TransceiverId
+    $TransceiverIdentifierType
+    $TransceiverInterfaceType
+    $TransceiverName
+    $TransceiverPartNumber
+    $TransceiverRevision
+    $TransceiverSerialNumber
+    $TransceiverVendorName
+}
+
 Try {
     Set-CertPolicy
+    $Output = @()
+    # Get iDRAC Info
+    $iDRACUri = "https://$idrac_ip/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces"
+    $iDRACResult = Invoke-WebRequest -Uri $iDRACUri -Credential $credential -Method Get -UseBasicParsing -Headers @{"Accept"="application/json"}
+    if ($iDRACResult.StatusCode -eq 200 -or $iDRACResult.StatusCode -eq 202) {
+        $iDRACResultJson = $iDRACResult.Content | ConvertFrom-Json
+        foreach ($iDRACNIC in $iDRACResultJson.Members) {
+            $iDRACNICUri = "https://$($idrac_ip)$($iDRACNIC.'@odata.id')"
+            $iDRACNICResult = Invoke-WebRequest -Uri $iDRACNICUri -Credential $credential -Method Get -UseBasicParsing -Headers @{"Accept"="application/json"}
+            $iDRACNICResultJson = $iDRACNICResult.Content | ConvertFrom-Json
+            $iDRACPortOutput = [NetworkDetails]@{
+                CardId = $iDRACNICResultJson.Id
+                CardManufacturer = "Dell"
+                CardModel = $iDRACNICResultJson.Name
+                PortMacAddresses = $iDRACNICResultJson.MACAddress
+            }
+            $Output += $iDRACPortOutput
+        }
+    }
+    # Get Network Adapter Info
     $Uri = "https://$idrac_ip/redfish/v1/Systems/System.Embedded.1/NetworkAdapters"
     $Result = Invoke-WebRequest -Uri $Uri -Credential $credential -Method Get -UseBasicParsing -Headers @{"Accept"="application/json"}
     if ($Result.StatusCode -eq 200 -or $Result.StatusCode -eq 202)
     {
-        $Output = @()
         # Convert result to JSON
         $ResultJson = $Result.Content | ConvertFrom-Json
         foreach ($NIC in $ResultJson.Members) {
@@ -91,6 +132,7 @@ Try {
                 $NICPortResultJson = $NICPortResult.Content | ConvertFrom-Json
                 $PortId = $NICPortResultJson.Id
                 $PortLinkStatus = $NICPortResultJson.LinkStatus
+                $PortMacAddresses = [string]$NICPortResultJson.AssociatedNetworkAddresses
                 $NICPortTransceiver = $NICPortResultJson.Oem.Dell.DellNetworkTransceiver
                 $TransceiverDeviceDescription = ""
                 $TransceiverFQDD = ""
@@ -115,7 +157,8 @@ Try {
                     $TransceiverVendorName = $NICPortTransceiver.VendorName
                 }
 
-                $PortOutput = [PSCustomObject]@{
+                $PortOutput = [NetworkDetails]@{
+                    Host = $idrac_ip
                     CardId = $CardId
                     CardManufacturer = $CardManufacturer
                     CardModel = $CardModel
@@ -123,6 +166,7 @@ Try {
                     CardSerialNumber = $CardSerialNumber
                     PortId = $PortId
                     PortLinkStatus = $PortLinkStatus
+                    PortMacAddresses = $PortMacAddresses
                     TransceiverDeviceDescription = $TransceiverDeviceDescription
                     TransceiverFQDD = $TransceiverFQDD
                     TransceiverId = $TransceiverId
