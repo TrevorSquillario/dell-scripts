@@ -20,7 +20,7 @@ http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
    - idrac_password: Pass in iDRAC username password
    - collection_data: Pass in a value for the type of data you want to collect for Support Assist collection. Supported values are: "0" for DebugLogs, "1" for HWData, "2" for OSAppData or "3" for TTYLogs. Defaults to "HWData" only. Note: You can pass in one value or multiple values to collect. If you pass in multiple values, use comma separator for the values and surround it with double quotes (Example: "0,3"). 
 .EXAMPLE
-   .\Invoke-SupportAssistCollection.ps1 -idrac_ip 192.168.0.120 -username root -password 'calvin'
+   .\Invoke-SupportAssistCollection.ps1 -idrac_ip 192.168.0.120 -idrac_username root -idrac_password 'calvin'
 #>
 
 param(
