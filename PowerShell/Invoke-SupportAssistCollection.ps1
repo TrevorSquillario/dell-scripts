@@ -31,7 +31,11 @@ param(
 [Parameter(Mandatory=$True)]
 [string]$idrac_password,
 [Parameter(Mandatory=$False)]
-[string]$collection_data
+[string]$collection_data,
+[Parameter(Mandatory=$False)]
+[string]$output_directory,
+[Parameter(Mandatory=$False)]
+[string]$accept_SA_license_agreement
 )
 
 # Function to ignore SSL certs
@@ -75,15 +79,38 @@ function Get-ServiceTag() {
 }
 
 
-function Invoke-DownloadCollection($CollectionPath){
+function Invoke-DownloadCollection($CollectionPath, $OutputDir){
     $ServiceTag = Get-ServiceTag
     $FileName = "TSR$((Get-Date).ToString('yyyyMMddHHmmss'))_$ServiceTag.zip"
-    $DownloadPath = Join-Path $PSScriptRoot $FileName
+    if ($OutputDir -ne "") {
+        $DownloadPath = Join-Path $OutputDir $FileName
+    } else {
+        $DownloadPath = Join-Path $PSScriptRoot $FileName
+    }
     Invoke-WebRequest -Uri "https://$idrac_ip$CollectionPath" -Credential $credential -OutFile $DownloadPath
     Write-Host "- File downloaded to $DownloadPath`n"
 }
 
-function Wait-OnJob($JobId)
+function Invoke-AcceptSupportSssistLicenseAgreement
+{
+
+$JsonBody = @{} | ConvertTo-Json -Compress
+$uri = "https://$idrac_ip/redfish/v1/Dell/Managers/iDRAC.Embedded.1/DellLCService/Actions/DellLCService.SupportAssistAcceptEULA"
+$post_result = Invoke-WebRequest -UseBasicParsing -SkipHeaderValidation -SkipCertificateCheck -Uri $uri -Credential $credential -Body $JsonBody -Method Post -ContentType 'application/json' -Headers @{"Accept"="application/json"} -ErrorVariable RespErr
+
+if ($post_result.StatusCode -eq 200 -or $post_result.StatusCode -eq 202)
+{
+Write-Host "`n- PASS, POST command passed to accept Support Assist license agreement (EULA)`n"
+}
+else
+{
+[String]::Format("- FAIL, POST command failed to accept SA license, statuscode {0} returned. Detail error message: {1}",$post_result.StatusCode, $post_result)
+break
+}
+
+}
+
+function Wait-OnJob($JobId, $OutputDir)
 {
 
 $get_time_old=Get-Date -DisplayHint Time
@@ -135,7 +162,7 @@ elseif ($overall_job_output.Message.Contains("partially") -or $overall_job_outpu
     Write-Host "`nSupport Assist collection job execution time:"
     $final_completion_time
     Write-Host "`n- URI Support Assist collection file location: $SA_report_file_location`n"
-    Invoke-DownloadCollection($SA_report_file_location)
+    Invoke-DownloadCollection -CollectionPath $SA_report_file_location -OutputDir $OutputDir
     break
 }
 elseif ($loop_time -gt $end_time)
@@ -152,7 +179,7 @@ elseif ($overall_job_output.Message -eq "The SupportAssist Collection Operation 
     Write-Host "`nSupport Assist collection job execution time:"
     $final_completion_time
     Write-Host "`n- URI Support Assist collection file location: $SA_report_file_location`n"
-    Invoke-DownloadCollection($SA_report_file_location)
+    Invoke-DownloadCollection -CollectionPath $SA_report_file_location -OutputDir $OutputDir
     break
 }
 else
@@ -243,7 +270,13 @@ $secpasswd = ConvertTo-SecureString $pass -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential($user, $secpasswd)
 
 Set-CertPolicy
+
+if ($accept_SA_license_agreement.ToLower() -eq "y")
+{
+    Invoke-AcceptSupportSssistLicenseAgreement
+}
+
 $JobId = Invoke-Collect
 if ($JobId -ne "") {
-    Wait-OnJob($JobId)
+    Wait-OnJob -JobId $JobId -OutputDir $output_directory
 }
