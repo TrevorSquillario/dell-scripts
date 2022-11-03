@@ -20,21 +20,15 @@ http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
    - idrac_ip: Pass in iDRAC IP
    - idrac_username: Pass in iDRAC username
    - idrac_password: Pass in iDRAC password
-   - x_auth_token: Pass in iDRAC X-Auth token session to execute cmdlet instead of username / password (recommended)
 .EXAMPLE
-   Invoke-ResetIdracREDFISH -idrac_ip 192.168.0.120 -idrac_username root -idrac_password calvin
+   .\Invoke-ResetiDRAC.ps1 -idrac_ip 192.168.0.120 -idrac_username root -idrac_password calvin
    # This example will reset iDRAC
 .EXAMPLE
-   Invoke-ResetIdracREDFISH -idrac_ip 192.168.0.120
+   .\Invoke-ResetiDRAC.ps1 -idrac_ip 192.168.0.120
    # This example will first prompt for iDRAC username/password using Get-Credential, then reset iDRAC
-.EXAMPLE
-   Invoke-ResetIdracREDFISH -idrac_ip 192.168.0.120 -x_auth_token 7bd9bb9a8727ec366a9cef5bc83b2708
-   # This example using iDRAC X-auth token session will reset iDRAC
 #>
 
-
 # Required, optional parameters needed to be passed in when cmdlet is executed
-
 param(
     [Parameter(Mandatory=$True)]
     [string]$idrac_ip,
