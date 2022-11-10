@@ -27,9 +27,6 @@ param(
 
 Add-Type -Assembly System.IO.Compression.FileSystem
 
-$TSRDir = $tsr_dir
-$TSRFiles = Get-ChildItem -Path $TSRDir -File -Filter "*.zip"
-
 class SystemHealthStatus {
     $Host
     $ServiceTag
@@ -51,6 +48,9 @@ class SystemHealthStatus {
     $TempStatisticsRollupStatus
     $VoltRollupStatus
 }
+
+$TSRDir = $tsr_dir
+$TSRFiles = Get-ChildItem -Path $TSRDir -File -Filter "*.zip" | % { $_.FullName }
 
 $Output = @()
 foreach ($TSRFile in $TSRFiles) {
@@ -121,4 +121,4 @@ foreach ($TSRFile in $TSRFiles) {
 
 }
 Write-Host $($Output | Format-Table | Out-String)
-$Output | Export-Csv -Path "$TSRDir\Output.csv"
+$Output | Export-Csv -Path "$TSRDir\Output.csv" -NoTypeInformation
