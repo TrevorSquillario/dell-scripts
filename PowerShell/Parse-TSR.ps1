@@ -30,6 +30,7 @@ Add-Type -Assembly System.IO.Compression.FileSystem
 class SystemHealthStatus {
     $Host
     $ServiceTag
+    $LastSystemInventoryTime
     $CPUInfo
     $BatteryRollupStatus
     $CPURollupStatus
@@ -58,6 +59,8 @@ foreach ($TSRFile in $TSRFiles) {
     $OuterZipContents = $OuterZip.Entries | Where {$_.Name -like '*.zip'} 
     $InnerZipStream = $OuterZipContents.Open()
     $InnerZip = [IO.Compression.ZipArchive]::new($InnerZipStream)
+
+    # Load XML 
     $InnerZipContents = $InnerZip.Entries | Where {$_.Name -eq 'sysinfo_DCIM_View.xml'} 
     $XMLStream = $InnerZipContents.Open()
 
@@ -84,7 +87,8 @@ foreach ($TSRFile in $TSRFiles) {
     $TempRollupStatus = $SystemView | ForEach-Object { $_.PROPERTY } | Where-Object { $_.NAME -eq "TempRollupStatus" } | Select-Object -ExpandProperty DisplayValue
     $TempStatisticsRollupStatus = $SystemView | ForEach-Object { $_.PROPERTY } | Where-Object { $_.NAME -eq "TempStatisticsRollupStatus" } | Select-Object -ExpandProperty DisplayValue
     $VoltRollupStatus = $SystemView | ForEach-Object { $_.PROPERTY } | Where-Object { $_.NAME -eq "VoltRollupStatus" } | Select-Object -ExpandProperty DisplayValue
-
+    $LastSystemInventoryTime = $SystemView | ForEach-Object { $_.PROPERTY } | Where-Object { $_.NAME -eq "LastSystemInventoryTime" } | Select-Object -ExpandProperty DisplayValue
+    
     # ServiceTag
     $ServiceTag = $SystemView | ForEach-Object { $_.PROPERTY } | 
         Where-Object { $_.NAME -eq "ServiceTag" } | Select-Object -ExpandProperty DisplayValue
@@ -99,6 +103,7 @@ foreach ($TSRFile in $TSRFiles) {
     $SubSystemHealthOutput = [SystemHealthStatus]@{
         Host = $TSRFile
         ServiceTag = $ServiceTag  
+        LastSystemInventoryTime = $LastSystemInventoryTime
         CPUInfo = $CPUInfo
         BatteryRollupStatus = $BatteryRollupStatus
         CPURollupStatus = $CPURollupStatus
