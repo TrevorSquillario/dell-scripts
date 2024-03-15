@@ -1,6 +1,6 @@
 $InventoryAll = @()
 foreach ($iDRAC in Get-Content "C:\Temp\hosts.txt") {
-    $Inventory = & "./PowerShell/Get-PCIInventory.ps1" -idrac_ip $iDRAC -idrac_username "root" -idrac_password "calvin" 
+    $Inventory = & "./PowerShell/Get-PCIDeviceInventory.ps1" -idrac_ip $iDRAC -idrac_username "root" -idrac_password "calvin" 
     # Parse Output
     foreach ($Line in $Inventory) {
         if ($Line.CardName -match "X710") {    

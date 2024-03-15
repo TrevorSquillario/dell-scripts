@@ -1,8 +1,8 @@
 
 <#
 _author_ = Trevor Squillario <Trevor_Squillario@Dell.com
-_version_ = 3.0
-Copyright (c) 2020, Dell, Inc.
+_version_ = 1.0
+Copyright (c) 2024, Dell, Inc.
 This software is licensed to you under the GNU General Public License,
 version 2 (GPLv2). There is NO WARRANTY for this software, express or
 implied, including the implied warranties of MERCHANTABILITY or FITNESS
@@ -19,7 +19,7 @@ http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
    - idrac_username: Pass in iDRAC username
    - idrac_password: Pass in iDRAC username password
 .EXAMPLE
-   .\Get-PCIInventory.ps1 -idrac_ip 192.168.0.120 -username root -password 'calvin'
+   .\Get-PCISlotInventory.ps1 -idrac_ip 192.168.0.120 -idrac_username root -idrac_password 'calvin'
 #>
 
 # Function to ignore SSL certs
@@ -70,39 +70,60 @@ function Set-CertPolicy() {
     $headers = @{"Accept"="application/json"}
     Try {
         Set-CertPolicy
-        $Uri = "https://$idrac_ip/redfish/v1/Systems/System.Embedded.1"
+        $Uri = "https://$idrac_ip/redfish/v1/Chassis/System.Embedded.1/PCIeSlots"
         $Result = Invoke-WebRequest -Uri $Uri -Credential $credential -Method Get -UseBasicParsing -Headers $headers
         if ($Result.StatusCode -eq 200 -or $Result.StatusCode -eq 202)
         {
             $Output = @()
             # Convert result to JSON
             $ResultJson = $Result.Content | ConvertFrom-Json
-            foreach ($Card in $ResultJson.PCIeDevices) {
-                $CardUri = "https://$($idrac_ip)$($Card.'@odata.id')"
-                $CardResult = Invoke-WebRequest -Uri $CardUri -Credential $credential -Method Get -UseBasicParsing -Headers $headers
-                $CardResultJson = $CardResult.Content | ConvertFrom-Json
-                $CardId = $CardResultJson.Id
-                $CardName = $CardResultJson.Name
-                $CardManufacturer = $CardResultJson.Manufacturer
-                $CardModel = $CardResultJson.Model
-                $CardFirmwareVersion = $CardResultJson.FirmwareVersion
-                $CardSerialNumber = $CardResultJson.SerialNumber
-                $CardPartNumber = $CardResultJson.PartNumber
-                $CardSKU = $CardResultJson.SKU
+            foreach ($Slot in $ResultJson.Slots) {
 
-                $CardOutput = [PSCustomObject]@{
-                    Host = $idrac_ip
-                    CardId = $CardId
-                    CardName = $CardName
-                    CardManufacturer = $CardManufacturer
-                    CardModel = $CardModel
-                    CardFirmwareVersion = $CardFirmwareVersion
-                    CardSerialNumber = $CardSerialNumber
-                    CardPartNumber = $CardPartNumber
-                    CardSKU = $CardSKU
+                $Lanes = $Slot.Lanes
+                $HotPluggable = $Slot.HotPluggable
+                $PCIeType = $Slot.PCIeType
+                $SlotType = $Slot.SlotType
+                $Status = $Slot.Status.State
+                $SlotKey = $Slot.Oem.Dell.SlotKey
+                $LocationOrdinalValue = $Slot.Location.PartLocation.LocationOrdinalValue
+                $LocationType = $Slot.Location.PartLocation.LocationType
+                
+                foreach ($PCIeDevice in $Slot.Links.PCIeDevice) {
+                    $SlotUri = "https://$($idrac_ip)$($PCIeDevice.'@odata.id')"
+                    $SlotResult = Invoke-WebRequest -Uri $SlotUri -Credential $credential -Method Get -UseBasicParsing -Headers $headers
+                    $SlotResultJson = $SlotResult.Content | ConvertFrom-Json
+                    $SlotId = $SlotResultJson.Id
+                    $SlotName = $SlotResultJson.Name
+                    $SlotManufacturer = $SlotResultJson.Manufacturer
+                    $SlotModel = $SlotResultJson.Model
+                    $SlotFirmwareVersion = $SlotResultJson.FirmwareVersion
+                    $SlotSerialNumber = $SlotResultJson.SerialNumber
+                    $SlotPartNumber = $SlotResultJson.PartNumber
+                    $SlotSKU = $SlotResultJson.SKU
+
+                    $SlotOutput = [PSCustomObject]@{
+                        Host = $idrac_ip
+                        Lanes = $Lanes
+                        HotPluggable = $HotPluggable
+                        PCIeType = $PCIeType
+                        SlotType = $SlotType
+                        Status = $Status
+                        SlotKey = $SlotKey
+                        LocationOrdinalValue = $LocationOrdinalValue
+                        LocationType = $LocationType
+                        SlotId = $SlotId
+                        SlotName = $SlotName
+                        SlotManufacturer = $SlotManufacturer
+                        SlotModel = $SlotModel
+                        SlotFirmwareVersion = $SlotFirmwareVersion
+                        SlotSerialNumber = $SlotSerialNumber
+                        SlotPartNumber = $SlotPartNumber
+                        SlotSKU = $SlotSKU
+                    }
+                    $Output += $SlotOutput
                 }
-                $Output += $CardOutput
             }
+            $Output = $Output.GetEnumerator() | Sort-Object LocationOrdinalValue
             return $Output #| Export-Csv "C:\Temp\Export.csv" -NoTypeInformation
         }
         else
@@ -116,6 +137,3 @@ function Set-CertPolicy() {
         Write-Error ($_.Exception | Format-List -Force | Out-String) 
         Write-Error ($_.InvocationInfo | Format-List -Force | Out-String)
     }
-
-#Get-PCIInventory -idrac_ip "192.168.1.100" -idrac_username "root" -idrac_password "calvin"
-

@@ -3,14 +3,14 @@
 # Examples
 Execute script on a single iDRAC
 ```
-Get-PCIInventory.ps1 -idrac_ip "192.168.1.100" -idrac_username "root" -idrac_password "calvin" 
+Get-PCIDeviceInventory.ps1 -idrac_ip "192.168.1.100" -idrac_username "root" -idrac_password "calvin" 
 ```
 
 Loop through text file and execute script for each iDRAC
 ```
 $InventoryAll = @()
 foreach ($iDRAC in Get-Content "C:\Temp\hosts.txt") {
-    $Inventory = & "./PowerShell/Get-PCIInventory.ps1" -idrac_ip $iDRAC -idrac_username "root" -idrac_password "calvin" 
+    $Inventory = & "./PowerShell/Get-PCIDeviceInventory.ps1" -idrac_ip $iDRAC -idrac_username "root" -idrac_password "calvin" 
     # Parse Output
     foreach ($Line in $Inventory) {
         if ($Line.CardName -match "X710") {    
