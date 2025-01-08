@@ -53,3 +53,4 @@ done
 
 # Start stress in the background
 stress -c $STRESSPROCSHALF --vm $STRESSPROCSHALF --vm-bytes "${VMPERWORKER}M" --timeout 86400 --verbose  >> "${OUTPUT_FILE}_stress.log" 2>&1 &
+
