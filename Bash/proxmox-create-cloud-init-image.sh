@@ -87,8 +87,10 @@ virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build
 virt-customize --copy-in inputrc:/etc -a ${image_path}
 # Add users and ssh keys
 virt-sysprep --root-password "file:/root/secrets/passwd_root" -a ${image_path}
-virt-sysprep --run-command "useradd oseadmin" --run-command "usermod -a -G sudo,wheel oseadmin" --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path}
+virt-sysprep --run-command "useradd oseadmin -m" --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path} 
 #--ssh-inject "oseadmin:file:/root/secrets/oseadmin.pub" -a ${image_path}
+virt-sysprep --run-command "usermod -a -G sudo oseadmin"  -a ${image_path}
+virt-sysprep --run-command "usermod -a -G wheel oseadmin"  -a ${image_path}
 
 # SSH config
 if [ ! -d $cloud_init_snippets_location ]; then
