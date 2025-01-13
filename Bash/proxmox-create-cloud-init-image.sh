@@ -41,16 +41,18 @@ vm_cores='2'
 build_info_file_location='/etc/release-build-info'
 cloud_init_snippets_location='/var/lib/vz/snippets'
 
+image_path=${install_dir}${image_name}
+
 # Clean up any previous build
-rm ${install_dir}${image_name}
+rm $image_path
 rm ${install_dir}build-info
 
 # Grab latest cloud-init image for your selected image
-if [ ! -f ${install_dir}${image_name} ]; then
-    echo "Downloading cloud-init image ${install_dir}${image_name}"
-    wget ${cloud_img_url} -O "${install_dir}${image_name}"
+if [ ! -f $image_path ]; then
+    echo "Downloading cloud-init image ${image_path}"
+    wget ${cloud_img_url} -O "${image_path}"
 else
-    echo "${install_dir}${image_name} found. Delete file to redownload"
+    echo "${image_path} found. Delete file to redownload"
 fi
 
 # insert commands to populate the currently empty build-info file
@@ -61,14 +63,14 @@ echo "Build date: "$(date) >> ${install_dir}build-info
 echo "Build creator: "${creator} >> ${install_dir}build-info
 
 # Customize image
-virt-customize --update -a ${image_name}
-virt-customize --install ${package_list} -a ${image_name}
+virt-customize --update -a ${image_path}
+virt-customize --install ${package_list} -a ${image_path}
 # Add build-info to image
-virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build-info:${build_info_file_location} -a ${image_name}
+virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build-info:${build_info_file_location} -a ${image_path}
 # Add /etc/inputrc for Ctrl+Up/Down Bash history search
-virt-customize --copy-in inputrc:/etc/inputrc -a ${image_name}
+virt-customize --copy-in inputrc:/etc/inputrc -a ${image_path}
 # Add users and ssh keys
-#virt-sysprep --run-command"'useradd ${cloud_init_user}" --ssh-inject "${cloud_init_user}:file:/home/trevor/.ssh/id_rsa.pub" -a ${image_name}
+#virt-sysprep --run-command"'useradd ${cloud_init_user}" --ssh-inject "${cloud_init_user}:file:/home/trevor/.ssh/id_rsa.pub" -a ${image_path}
 
 # SSH config
 if [ ! -d $cloud_init_snippets_location ]; then
@@ -80,7 +82,7 @@ qm set ${build_vm_id} --cicustom "user=local:snippets/proxmox-create-cloud-init-
 # Build image
 qm destroy ${build_vm_id}
 qm create ${build_vm_id} --memory ${vm_mem} --cores ${vm_cores} --net0 virtio,bridge=vmbr0 --name ${template_name}
-qm importdisk ${build_vm_id} ${install_dir}${image_name} ${storage_location}
+qm importdisk ${build_vm_id} $image_path ${storage_location}
 qm set ${build_vm_id} --scsihw ${scsihw} --scsi0 ${storage_location}:vm-${build_vm_id}-disk-0
 qm set ${build_vm_id} --ide0 ${storage_location}:cloudinit
 qm set ${build_vm_id} --ipconfig0 ip=dhcp --ostype l26 --sshkeys ${keyfile} --ciuser ${cloud_init_user} #--cipassword "calvin" # --searchdomain ${searchdomain}
