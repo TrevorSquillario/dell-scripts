@@ -44,12 +44,12 @@ cloud_init_snippets_location='/var/lib/vz/snippets'
 image_path=${install_dir}${image_name}
 
 # Clean up any previous build
-rm $image_path
+#rm $image_path
 rm ${install_dir}build-info
 
 # Grab latest cloud-init image for your selected image
 if [ ! -f $image_path ]; then
-    echo "Downloading cloud-init image ${image_path}"
+    echo "Downloading cloud-init image to ${image_path}"
     wget ${cloud_img_url} -O "${image_path}"
 else
     echo "${image_path} found. Delete file to redownload"
@@ -68,7 +68,7 @@ virt-customize --install ${package_list} -a ${image_path}
 # Add build-info to image
 virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build-info:${build_info_file_location} -a ${image_path}
 # Add /etc/inputrc for Ctrl+Up/Down Bash history search
-virt-customize --copy-in inputrc:/etc/inputrc -a ${image_path}
+virt-customize --copy-in inputrc:/etc -a ${image_path}
 # Add users and ssh keys
 #virt-sysprep --run-command"'useradd ${cloud_init_user}" --ssh-inject "${cloud_init_user}:file:/home/trevor/.ssh/id_rsa.pub" -a ${image_path}
 
