@@ -33,7 +33,7 @@ cloud_img_url=$arg_cloud_init_url
 package_list='cloud-init,qemu-guest-agent,curl,wget,tree,tmux,git'
 
 # What storage location on your PVE node do you want to use for the template? (zfs-mirror, local-lvm, local, etc.)
-storage_location='VMStorage'
+storage_location='VMTemplates'
 
 # VM Options
 #searchdomain='ENTER-SEARCH-DOMAIN-HERE'
