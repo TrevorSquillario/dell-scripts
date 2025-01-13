@@ -85,7 +85,10 @@ qm create ${build_vm_id} --memory ${vm_mem} --cores ${vm_cores} --net0 virtio,br
 qm importdisk ${build_vm_id} $image_path ${storage_location}
 qm set ${build_vm_id} --scsihw ${scsihw} --scsi0 ${storage_location}:vm-${build_vm_id}-disk-0
 qm set ${build_vm_id} --ide0 ${storage_location}:cloudinit
-qm set ${build_vm_id} --ipconfig0 ip=dhcp --ostype l26 --sshkeys ${keyfile} --ciuser ${cloud_init_user} #--cipassword "calvin" # --searchdomain ${searchdomain}
+qm set ${build_vm_id} --ipconfig0 ip=dhcp --ostype l26 --sshkeys ${keyfile} --ciuser ${cloud_init_user} #--cipassword "" # --searchdomain ${searchdomain}
 qm set ${build_vm_id} --boot c --bootdisk scsi0
 qm set ${build_vm_id} --agent enabled=1
+# Allow Proxmox GUI console access
+qm set ${build_vm_id} --serial0 socket --vga serial0
+# Convert to template
 qm template ${build_vm_id}
