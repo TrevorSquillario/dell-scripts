@@ -28,7 +28,6 @@ cloud_img_url=$arg_cloud_init_url
 # Rocky 9
 #cloud_img_url='https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2'
 
-image_name=${cloud_img_url##*/}
 
 # Enter the additional packages you would like in your template.
 package_list='cloud-init,qemu-guest-agent,curl,wget,tree,tmux,git'
@@ -45,8 +44,11 @@ cloud_init_user='trevor'
 # Default setting is the most common
 scsihw='virtio-scsi-pci'
 
-# What to name your template. This is free form with no spaces and will be used for automation/deployments.
+# Set template name and image file name on disk. We want to separate the source image from the custom image we are building
 template_name=$arg_template_name
+source_image_name=${cloud_img_url##*/}
+image_extension="${source_image_name##*.}"
+image_name="${template_name}.${image_extension}"
 
 # Memory and CPU cores. These are overridden with image deployments or through the PVE interface.
 vm_mem='2048'
@@ -57,19 +59,24 @@ vm_disk_size='40G'
 build_info_file_location='/etc/release-build-info'
 cloud_init_snippets_location='/var/lib/vz/snippets'
 
+source_image_path=${install_dir}${source_image_name}
 image_path=${install_dir}${image_name}
 
+# Grab latest cloud-init image for your selected image
+if [ ! -f $source_image_path ]; then
+    echo "Downloading cloud-init image to ${source_image_path}"
+    wget ${cloud_img_url} -O "${source_image_path}"
+else
+    echo "${source_image_path} found. Delete file to redownload"
+fi
+
 # Clean up any previous build
-#rm $image_path
+rm $image_path
 rm ${install_dir}build-info
 
-# Grab latest cloud-init image for your selected image
-if [ ! -f $image_path ]; then
-    echo "Downloading cloud-init image to ${image_path}"
-    wget ${cloud_img_url} -O "${image_path}"
-else
-    echo "${image_path} found. Delete file to redownload"
-fi
+# Copy source image to image we are going to customize
+echo "Copy ${source_image_path} to ${image_path}"
+cp $source_image_path $image_path
 
 # insert commands to populate the currently empty build-info file
 touch ${install_dir}build-info
@@ -87,7 +94,7 @@ virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build
 virt-customize --copy-in inputrc:/etc -a ${image_path}
 # Add users and ssh keys
 virt-sysprep --root-password "file:/root/secrets/passwd_root" -a ${image_path}
-virt-sysprep --run-command "useradd oseadmin -m" --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path} 
+virt-sysprep --run-command "useradd -m oseadmin" --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path} 
 #--ssh-inject "oseadmin:file:/root/secrets/oseadmin.pub" -a ${image_path}
 virt-sysprep --run-command "usermod -a -G sudo oseadmin"  -a ${image_path}
 virt-sysprep --run-command "usermod -a -G wheel oseadmin"  -a ${image_path}
