@@ -5,6 +5,3 @@
 #    sudo: ['ALL=(ALL) NOPASSWD:ALL']
 ssh_pwauth: True
 disable_root: False
-chpasswd:
-  list:  |
-     root:password

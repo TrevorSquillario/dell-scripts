@@ -82,7 +82,7 @@ qm set ${build_vm_id} --cicustom "user=local:snippets/proxmox-create-cloud-init-
 
 # Build image
 qm destroy ${build_vm_id}
-qm create ${build_vm_id} --memory ${vm_mem} --cores ${vm_cores} --net0 virtio,bridge=vmbr0 --name ${template_name}
+qm create ${build_vm_id} --memory ${vm_mem} --cores ${vm_cores} --net0 "virtio,bridge=vmbr0,mtu=1200" --name ${template_name}
 qm importdisk ${build_vm_id} $image_path ${storage_location}
 qm set ${build_vm_id} --scsihw ${scsihw} --scsi0 ${storage_location}:vm-${build_vm_id}-disk-0
 qm set ${build_vm_id} --ide0 ${storage_location}:cloudinit
