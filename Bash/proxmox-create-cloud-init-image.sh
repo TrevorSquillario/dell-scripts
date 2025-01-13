@@ -36,6 +36,7 @@ template_name=${image_name}
 # Memory and CPU cores. These are overridden with image deployments or through the PVE interface.
 vm_mem='2048'
 vm_cores='2'
+vm_disk_size='40G'
 
 # Where to store the build-info file in the template for easy identification.
 build_info_file_location='/etc/release-build-info'
@@ -90,5 +91,7 @@ qm set ${build_vm_id} --boot c --bootdisk scsi0
 qm set ${build_vm_id} --agent enabled=1
 # Allow Proxmox GUI console access
 qm set ${build_vm_id} --serial0 socket --vga serial0
+# Resize disk
+qm resize ${build_vm_id} scsi0 $vm_disk_size
 # Convert to template
 qm template ${build_vm_id}
