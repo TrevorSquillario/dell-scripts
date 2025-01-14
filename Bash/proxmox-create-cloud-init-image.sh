@@ -30,7 +30,7 @@ cloud_img_url=$arg_cloud_init_url
 
 
 # Enter the additional packages you would like in your template.
-package_list='cloud-init,qemu-guest-agent,curl,wget,tree,tmux,git'
+package_list='cloud-init,qemu-guest-agent,curl,wget,tree,tmux,git,vim,bash-completion'
 
 # What storage location on your PVE node do you want to use for the template? (zfs-mirror, local-lvm, local, etc.)
 storage_location='VMStorage'
@@ -93,9 +93,10 @@ virt-customize --install ${package_list} -a ${image_path}
 virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build-info:${build_info_file_location} -a ${image_path}
 # Add /etc/inputrc for Ctrl+Up/Down Bash history search
 virt-customize --copy-in inputrc:/etc -a ${image_path}
+virt-customize  --timezone "America/Chicago" -a ${image_path}
 # SELinux
-virt-customize --selinux-relabel -a ${image_path}
-virt-customize --run-command ' sed -i "s/^SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config' -a ${image_path}
+#virt-customize --selinux-relabel -a ${image_path}
+#virt-customize --run-command ' sed -i "s/^SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config' -a ${image_path}
 # Add users and ssh keys
 virt-sysprep --root-password "file:/root/secrets/passwd_root" -a ${image_path}
 virt-sysprep --run-command "useradd -m -s /bin/bash oseadmin" --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path} 
@@ -114,8 +115,8 @@ qm set ${build_vm_id} --cicustom "user=local:snippets/proxmox-create-cloud-init-
 qm destroy ${build_vm_id}
 qm create ${build_vm_id} --pool ${resource_pool} --memory ${vm_mem} --cpu "cputype=host" --cores ${vm_cores} --net0 "virtio,bridge=vmbr0,mtu=1200" --name ${template_name}
 qm importdisk ${build_vm_id} $image_path ${storage_location}
-qm set ${build_vm_id} --scsihw ${scsihw} --virtio0 ${storage_location}:vm-${build_vm_id}-disk-0
-qm set ${build_vm_id} --ide0 ${storage_location}:cloudinit
+qm set ${build_vm_id} --scsihw ${scsihw} --virtio0 ${storage_location}:vm-${build_vm_id}-disk-0 --iothread 1
+qm set ${build_vm_id} --ide2 ${storage_location}:cloudinit
 qm set ${build_vm_id} --efidisk0 ${storage_location}:0 --bios ovmf
 qm set ${build_vm_id} --ipconfig0 ip=dhcp --ostype l26 --sshkeys ${keyfile} --ciuser ${cloud_init_user} #--cipassword "" # --searchdomain ${searchdomain}
 qm set ${build_vm_id} --boot c --bootdisk virtio0
