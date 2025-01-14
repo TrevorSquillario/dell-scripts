@@ -34,6 +34,7 @@ package_list='cloud-init,qemu-guest-agent,curl,wget,tree,tmux,git'
 
 # What storage location on your PVE node do you want to use for the template? (zfs-mirror, local-lvm, local, etc.)
 storage_location='VMStorage'
+resource_pool='UserVMs'
 
 # VM Options
 #searchdomain='ENTER-SEARCH-DOMAIN-HERE'
@@ -117,6 +118,8 @@ qm set ${build_vm_id} --boot c --bootdisk scsi0
 qm set ${build_vm_id} --agent enabled=1
 # Allow Proxmox GUI console access
 qm set ${build_vm_id} --serial0 socket --vga serial0
+# Add to Resource Pool
+qm set ${build_vm_id} --pool ${resource_pool}
 # Resize disk
 qm resize ${build_vm_id} scsi0 $vm_disk_size
 # Convert to template
