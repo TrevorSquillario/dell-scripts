@@ -93,16 +93,17 @@ virt-customize --install ${package_list} -a ${image_path}
 virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build-info:${build_info_file_location} -a ${image_path}
 # Add /etc/inputrc for Ctrl+Up/Down Bash history search
 virt-customize --copy-in inputrc:/etc -a ${image_path}
-virt-customize  --timezone "America/Chicago" -a ${image_path}
+virt-customize --timezone "America/Chicago" -a ${image_path}
 # SELinux
-#virt-customize --selinux-relabel -a ${image_path}
-#virt-customize --run-command ' sed -i "s/^SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config' -a ${image_path}
-# Add users and ssh keys
-virt-sysprep --root-password "file:/root/secrets/passwd_root" -a ${image_path}
-virt-sysprep --run-command "useradd -m -s /bin/bash oseadmin" --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path} 
+virt-customize --selinux-relabel -a ${image_path}
+virt-customize --run-command ' sed -i "s/^SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config' -a ${image_path}
+# Add users
+virt-customize --run-command "useradd -m -s /bin/bash oseadmin" -a ${image_path} \
+--run-command "usermod -a -G sudo oseadmin"  -a ${image_path} \
+--run-command "usermod -a -G wheel oseadmin"  -a ${image_path}
+virt-customize --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path}
+virt-sysprep --root-password "file:/root/secrets/passwd_root" -a ${image_path} 
 #--ssh-inject "oseadmin:file:/root/secrets/oseadmin.pub" -a ${image_path}
-virt-sysprep --run-command "usermod -a -G sudo oseadmin"  -a ${image_path}
-virt-sysprep --run-command "usermod -a -G wheel oseadmin"  -a ${image_path}
 
 # SSH config
 if [ ! -d $cloud_init_snippets_location ]; then
