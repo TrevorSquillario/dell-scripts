@@ -2,17 +2,30 @@
 # requires libguestfs-tools to be installed.
 # This script is designed to be run inside the ProxMox VE host environment.
 
-while getopts u:n:i: flag
+while getopts u:n:i:t: flag
 do
     case "${flag}" in
         u) arg_cloud_init_url=${OPTARG};;
         n) arg_template_name=${OPTARG};;
         i) arg_template_id=${OPTARG};;
+        t) arg_image_type=${OPTARG};;
     esac
 done
 
+validate() {
+    grep -F -q -x "$1" <<EOF
+RHEL
+UBUNTU
+EOF
+}
+
 if [ -z "$arg_cloud_init_url" ] || [ -z "$arg_template_name" ] || [ -z "$arg_template_id" ]; then
     echo 'Arguments missing -u (Cloud-init image URL to Download), -n (Proxmox Template Name) or -i (Proxmox ID for Template)' >&2
+    exit 1
+fi
+
+if ! validate "$arg_image_type" || [ -z "$arg_image_type" ]; then
+    echo 'Arguments missing -t (Image Type). Supported values are RHEL and UBUNTU' >&2
     exit 1
 fi
 
@@ -87,20 +100,31 @@ echo "Build date: "$(date) >> ${install_dir}build-info
 echo "Build creator: "${creator} >> ${install_dir}build-info
 
 # Customize image
-virt-customize --update -a ${image_path}
+# Only update image for Ubuntu. For RHEL/Rocky based images this causes the image not to boot (dracutdracut-initqueue timeout)
+if [ "$arg_image_type" = "UBUNTU" ]; then
+    virt-customize --update -a ${image_path}
+fi
 virt-customize --install ${package_list} -a ${image_path}
 # Add build-info to image
 virt-customize --mkdir ${build_info_file_location} --copy-in ${install_dir}build-info:${build_info_file_location} -a ${image_path}
 # Add /etc/inputrc for Ctrl+Up/Down Bash history search
 virt-customize --copy-in inputrc:/etc -a ${image_path}
 virt-customize --timezone "America/Chicago" -a ${image_path}
+
 # SELinux
-virt-customize --selinux-relabel -a ${image_path}
-virt-customize --run-command ' sed -i "s/^SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config' -a ${image_path}
+if [ "$arg_image_type" = "RHEL" ]; then
+    virt-customize --selinux-relabel -a ${image_path}
+    virt-customize --run-command ' sed -i "s/^SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config' -a ${image_path}
+fi
+
 # Add users
-virt-customize --run-command "useradd -m -s /bin/bash oseadmin" -a ${image_path} \
---run-command "usermod -a -G sudo oseadmin"  -a ${image_path} \
---run-command "usermod -a -G wheel oseadmin"  -a ${image_path}
+virt-customize --run-command "useradd -m -s /bin/bash oseadmin" -a ${image_path}
+if [ "$arg_image_type" = "UBUNTU" ]; then
+    virt-customize --run-command "usermod -a -G sudo oseadmin"  -a ${image_path}
+fi
+if [ "$arg_image_type" = "RHEL" ]; then
+    virt-customize --run-command "usermod -a -G wheel oseadmin"  -a ${image_path}
+fi
 virt-customize --password "oseadmin:file:/root/secrets/passwd_oseadmin" -a ${image_path}
 virt-sysprep --root-password "file:/root/secrets/passwd_root" -a ${image_path} 
 #--ssh-inject "oseadmin:file:/root/secrets/oseadmin.pub" -a ${image_path}
@@ -114,7 +138,7 @@ qm set ${build_vm_id} --cicustom "user=local:snippets/proxmox-create-cloud-init-
 
 # Build image
 qm destroy ${build_vm_id}
-qm create ${build_vm_id} --pool ${resource_pool} --memory ${vm_mem} --cpu "cputype=host" --cores ${vm_cores} --net0 "virtio,bridge=vmbr0,mtu=1200" --name ${template_name}
+qm create ${build_vm_id} --pool ${resource_pool} --memory ${vm_mem} --cpu "cputype=host" --cores ${vm_cores} --net0 "virtio,bridge=vmbr0" --name ${template_name}
 qm importdisk ${build_vm_id} $image_path ${storage_location}
 qm set ${build_vm_id} --scsihw ${scsihw} --virtio0 "${storage_location}:vm-${build_vm_id}-disk-0,iothread=1"
 qm set ${build_vm_id} --ide2 ${storage_location}:cloudinit
