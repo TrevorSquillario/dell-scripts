@@ -1,7 +1,0 @@
-#cloud-config
-#users:
-#  - name: trevor
-#    shell: /bin/bash
-#    sudo: ['ALL=(ALL) NOPASSWD:ALL']
-ssh_pwauth: True
-disable_root: False
