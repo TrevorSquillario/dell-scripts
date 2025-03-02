@@ -20,10 +20,10 @@ http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
    - password: Pass in iDRAC username password
    - gid: Group ID
 .EXAMPLE
-   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin'
-   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin' -gid 10323
-   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin' -gid 10323 | Measure
-   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin' -gid 10323 | select identifier -unique | Measure
+   .\Get-OMEDevice.ps1 -ip ome.example.com -username root -password 'calvin'
+   .\Get-OMEDevice.ps1 -ip ome.example.com -username root -password 'calvin' -gid 10323
+   .\Get-OMEDevice.ps1 -ip ome.example.com -username root -password 'calvin' -gid 10323 | Measure
+   .\Get-OMEDevice.ps1 -ip ome.example.com -username root -password 'calvin' -gid 10323 | select identifier -unique | Measure
     
 #>
 
