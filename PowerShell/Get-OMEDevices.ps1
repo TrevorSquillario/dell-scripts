@@ -15,11 +15,16 @@ http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 .Synopsis
    Cmdlet used to get network card info including ports and transceivers
 .DESCRIPTION
-   - idrac_ip: Pass in iDRAC IP address
-   - idrac_username: Pass in iDRAC username
-   - idrac_password: Pass in iDRAC username password
+   - ip: Pass in iDRAC IP address
+   - username: Pass in iDRAC username
+   - password: Pass in iDRAC username password
+   - gid: Group ID
 .EXAMPLE
-   .\Get-NetworkInventory.ps1 -idrac_ip 192.168.0.120 -username root -password 'calvin'
+   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin'
+   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin' -gid 10323
+   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin' -gid 10323 | Measure
+   .\Get-OMEDevice.ps1 -ip 192.168.0.120 -username root -password 'calvin' -gid 10323 | select identifier -unique | Measure
+    
 #>
 
 param(
