@@ -39,8 +39,8 @@ parser.add_argument('-u', help='iDRAC username, argument only required if config
 parser.add_argument('-p', help='iDRAC password, argument only required if configuring one iDRAC', required=False)
 parser.add_argument('-s', help='Pass in the report status to be set. Possible values are Enabled/Disabled', default='Enabled', required=False)
 parser.add_argument('-f', help='Pass in csv file name. If file is not located in same directory as script, pass in the full directory path with file name. NOTE: Make sure to use iDRACs.csv file from the repo which has the correct format.', required=False)
-parser.add_argument('-d', '--get-metric-report-definition', dest='get_metric_report_definition', help='Get a single MetricReportDefinition by name (e.g. MemorySensor), or "all" to list every MetricReportDefinition URI', required=False)
-parser.add_argument('-r', '--get-metric-report', dest='get_metric_report', help='Get a single MetricReport by name (e.g. MemorySensor), or "all" to list every MetricReport URI', required=False)
+parser.add_argument('-d', '--get-metric-report-definition', dest='get_metric_report_definition', help='Get a single MetricReportDefinition by name (e.g. MemorySensor), or "all" to list every MetricReportDefinition name', required=False)
+parser.add_argument('-r', '--get-metric-report', dest='get_metric_report', help='Get a single MetricReport by name (e.g. MemorySensor), or "all" to list every MetricReport name', required=False)
 parser.add_argument('-m', '--metric-report', dest='metric_report', help='Comma-separated MetricReportDefinition name(s) to operate on (e.g. MemorySensor,CPUSensor), or "all" to operate on every MetricReportDefinition. If omitted, all MetricReportDefinitions are updated', required=False)
 
 args = vars(parser.parse_args())
@@ -55,9 +55,9 @@ def print_examples():
         '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin -s Enabled --metric-report MemorySensor,CPUSensor, this example will enable Telemetry and only the MemorySensor and CPUSensor MetricReportDefinitions for a single iDRAC\n'
         '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin -s Disabled --metric-report all, this example will disable Telemetry and every MetricReportDefinition for a single iDRAC\n'
         '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin --get-metric-report-definition MemorySensor, this example will print the MemorySensor MetricReportDefinition JSON for a single iDRAC\n'
-        '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin --get-metric-report-definition all, this example will list all MetricReportDefinition URIs for a single iDRAC\n'
+        '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin --get-metric-report-definition all, this example will list all MetricReportDefinition names for a single iDRAC\n'
         '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin --get-metric-report MemorySensor, this example will print the MemorySensor MetricReport JSON for a single iDRAC\n'
-        '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin --get-metric-report all, this example will list all MetricReport URIs for a single iDRAC\n'
+        '\n\'manage_telemetry_reports.py -ip 192.168.0.120 -u root -p calvin --get-metric-report all, this example will list all MetricReport names for a single iDRAC\n'
         '\n\'manage_telemetry_reports.py -f C:\\Python39\\iDRACs.csv -s Enabled, this example will enable Telemetry and all MetricReportDefinitions for all iDRACs in the CSV file\n'
         '\n\'manage_telemetry_reports.py -f C:\\Python39\\iDRACs.csv -s Disabled, this example will disable Telemetry and all MetricReportDefinitions for all iDRACs in the CSV file\n')
 
@@ -210,7 +210,10 @@ def apply_status(ip, user, pwd, telemetry_attributes):
 
 
 def list_collection_members(ip, user, pwd, collection_uri, label):
-    """Retrieve a Redfish collection and print only the Members' @odata.id values.
+    """Retrieve a Redfish collection and print only the last segment of each Members' @odata.id.
+
+    For example, '/redfish/v1/TelemetryService/MetricReports/OME-PMP-SystemUsage'
+    is printed as 'OME-PMP-SystemUsage'.
 
     Args:
         collection_uri (str): Full URL of the collection resource
@@ -232,7 +235,8 @@ def list_collection_members(ip, user, pwd, collection_uri, label):
         data = json.loads(response.text)
         members = data.get('Members', [])
         for member in members:
-            print(member.get('@odata.id'))
+            odata_id = member.get('@odata.id', '')
+            print(odata_id.rstrip('/').split('/')[-1])
         return members
     except Exception as e:
         logging.error("- FAIL parsing %s JSON: %s", label, e)
@@ -243,7 +247,7 @@ def get_metric_report_definition(ip, user, pwd, report_name):
     """Retrieve a single MetricReportDefinition by name and print JSON.
 
     Passing 'all' retrieves the MetricReportDefinitions collection and lists only
-    the Members' @odata.id values.
+    the name (last segment of @odata.id) of each member.
     """
     if report_name.strip().lower() == 'all':
         return list_collection_members(
@@ -273,7 +277,7 @@ def get_metric_report(ip, user, pwd, report_name):
     """Retrieve a single MetricReport by name and print JSON.
 
     Passing 'all' retrieves the MetricReports collection and lists only the
-    Members' @odata.id values.
+    name (last segment of @odata.id) of each member.
     """
     if report_name.strip().lower() == 'all':
         return list_collection_members(
